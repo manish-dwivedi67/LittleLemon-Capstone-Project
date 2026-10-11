@@ -31,12 +31,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-import androidx.navigation.NavController
+
+import androidx.navigation.compose.rememberNavController
+
+
 
 @Preview (showBackground = true)
 @Composable
 
-fun Onboarding(navController: NavController) {
+fun Onboarding() {
+    val context = LocalContext.current
+    val navController = rememberNavController()
+
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -100,25 +106,20 @@ fun Onboarding(navController: NavController) {
                 onClick = {
                     if (firstName.isBlank() || lastName.isBlank() || email.isBlank() ) {
                         registrationMessage = "Registration unsuccessful. Please enter all data."
-                    }
-
 
                     } else {
                         // Creating shared prefernces for storing user's data
-                        val sharedPreferences= getSharedPreferences("User Prefs", Context.MODE_PRIVATE)
+                        val sharedPreferences= context.getSharedPreferences("User Prefs", Context.MODE_PRIVATE)
 
-                        with (sharedPreferences.edit()
+                        sharedPreferences.edit()
                             .putString("FIRST_NAME", firstName)
                             .putString("LAST_NAME", lastName)
                             .putString("EMAIL", email)
-                                .commit()
-
+                            .apply()
                 registrationMessage = "Registration Successfully"
-                navController.navigate("Home")
-
+                        navController.navigate("Home")
                     }
-
-                }
+                },
                 modifier = Modifier.background(Color(0xFFF4CE14))
             ) { Text("Register")
 

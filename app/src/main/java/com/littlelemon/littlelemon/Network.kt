@@ -1,0 +1,55 @@
+package com.littlelemon.littlelemon
+
+import android.view.Menu
+import io.ktor.client.HttpClient
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+
+@Serializable
+
+data class  MenuNetworkdata (
+    @SerialName("menu")
+    val menu: List<MenuItemNetwork>
+)
+
+@Serializable
+data class MenuItemNetwork (
+    @SerialName("id")
+    val id : Int,
+
+    @SerialName( "Title")
+    val title : String,
+
+    @SerialName("Description")
+    val description: String,
+
+    @SerialName("price")
+    val price: String,
+
+    @SerialName("Image")
+    val image: String,
+
+    @SerialName("Category")
+    val category: String
+) {
+    fun toMenuItemRoom() = MenuItems(
+        id= id,
+        title= title,
+        price = price.toBigDecimalOrNull()?.toInt() ?: price.toIntOrNull() ?: 0,
+        image= image,
+        category= category
+
+    )
+}
+
+
+
+
+
+
+
+
+
+
+
