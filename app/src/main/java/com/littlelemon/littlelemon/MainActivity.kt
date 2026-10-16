@@ -4,29 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
-import androidx.room.Room
 import com.littlelemon.littlelemon.ui.theme.LittleLemonTheme
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -37,37 +22,47 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import io.ktor.client.statement.bodyAsText
+
 
 
 class MainActivity : ComponentActivity() {
 
     private suspend fun fetchMenu(): List<MenuItemNetwork> {
         val url = "https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/menu.json"
-        val response: MenuNetworkdata = client.get(url).body()
+
+        // Fetch raw response as a string
+        val jsonString = client.get(url).bodyAsText()
+        // Decode manually using Kotlinx Serilisation
+        val response = Json { ignoreUnknownKeys= true }.decodeFromString<MenuNetworkdata>(jsonString)
         return response.menu
     }
 
     private fun saveMenuToDatabase(menuItemsNetwork: List<MenuItemNetwork>) {
-        val menuItemsRoom = menuItemsNetwork.map{it.toMenuItemRoom()}
-        database.menuDao().insertAll(*menuItemsRoom.toTypedArray())
-
+        val menuItemsRoom = menuItemsNetwork.map { it.toMenuItemRoom() }
+        database.menuDao().insertAll(menuItemsRoom)
     }
-         private val database by lazy {
-        Room.databaseBuilder(applicationContext, AppDatabase::class.java, "database").build()
+
+    private fun insertFallbackMenu() {
+        val fallbackItems = listOf(
+            MenuItemEntity(1, "Greek Salad", 10, "https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/greekSalad.jpg?raw=true", "starters", "The famous Greek salad of crispy lettuce, peppers, olives and our Chicago..."),
+            MenuItemEntity(2, "Bruschetta", 8, "https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/bruschetta.jpg?raw=true", "starters", "Our Bruschetta is made from grilled bread that has been rubbed with garlic and seasoned with salt and olive oil."),
+            MenuItemEntity(3, "Grilled Fish", 15, "https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/grilledFish.jpg?raw=true", "mains", "Subtle spice, rich and hearty flavor, this grilled fish is a Mediterranean delight."),
+            MenuItemEntity(4, "Pasta", 12, "https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/pasta.jpg?raw=true", "mains", "Delicious homemade pasta served with rich tomato sauce."),
+            MenuItemEntity(5, "Lemon Dessert", 5, "https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/lemonDessert.jpg?raw=true", "desserts", "Derived from grandma's secret recipe, this authentic lemon dessert is pure bliss.")
+        )
+        database.menuDao().insertAll(fallbackItems)
+    }
+
+    private val database by lazy {
+        AppDatabase.getInstance(applicationContext)
     }
 
     // Create and configure the HTTP client instance
-    private val client= HttpClient(Android) {
-        // Install ContentNegotiation
+    private val client = HttpClient(Android)
 
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys= true
 
-            })
 
-        }
-    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,99 +70,36 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // Triggers the fetch
         lifecycleScope.launch(Dispatchers.IO) {
-            if (database.menuDao().isEmpty()) {
-                val menuItemNetwork= fetchMenu()
-                saveMenuToDatabase(menuItemNetwork)
+            try {
+                if (database.menuDao().count() == 0) {
+                    try {
+                        val menuItemNetwork = fetchMenu()
+                        saveMenuToDatabase(menuItemNetwork)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        insertFallbackMenu()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+
         }
 
         setContent {
-
             LittleLemonTheme {
-
-                var searchPhrase by remember { mutableStateOf("") }
-                var selectedCategory by remember { mutableStateOf("")}
-
-                // Observe menu items from Room
-                val databaseMenuItems by database.menuDao()
-                    .getAll()
-                    .observeAsState(initial= emptyList())
-
-                // Extract categories names from databaseMenuItems
-                val categories = databaseMenuItems.map{it.category}.distinct()
-
-                // Display category breakdown buttons
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(vertical = 8.dp)
-
-                ) {
-                    items(categories) { category ->
-                        Button(
-                            onClick = {
-                                // toggle selection if already selected
-                                selectedCategory = if(selectedCategory == category) "" else category
-                            }
-                        ) {
-                            Text(text = category)
-                        }
-                    }
-                }
-
-
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(modifier = Modifier.padding(innerPadding)) {
-
-
-                        TextField(
-                            value = searchPhrase,
-                            onValueChange = { searchPhrase = it },
-                            placeholder = { Text("Enter Search Phrase") }
-                        )
-
-                        val filteredMenuItems = databaseMenuItems.filter { menuItems ->
-                            val matchesSearch = searchPhrase.isEmpty() || menuItems.title.contains(
-                                searchPhrase,
-                                ignoreCase = true
-                            )
-                            val matchesCategory = selectedCategory.isEmpty() || menuItems.category.equals(
-                                    selectedCategory,
-                                    ignoreCase = true
-                                )
-
-                            matchesSearch && matchesCategory
+                        val navController = rememberNavController()
+                        Box(modifier = Modifier.padding()) {
+                            Navigation(navController = navController)
                         }
-
-                        MenuItems(menuItems = filteredMenuItems)
                     }
-                }
-
-
-                    val navController = rememberNavController()
-
-                    Box(modifier = Modifier.padding()) {
-                        Navigation(navController = navController)
-                    }
-
                 }
             }
         }
-
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
+    }
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LittleLemonTheme {
-        Greeting("Android")
-    }
-}}
+

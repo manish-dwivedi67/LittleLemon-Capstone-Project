@@ -1,7 +1,7 @@
 package com.littlelemon.littlelemon
 
-import androidx.navigation.Navigation
-import androidx.navigationevent.NavigationEventInfo
+
+
 
 interface Destinations  {
     val route: String
@@ -14,7 +14,7 @@ object Onboarding: Destinations{
 
 }
 
-object Home: Destinations {
+object HomeDestination: Destinations {
 
     override val route: String = "Home"
 }

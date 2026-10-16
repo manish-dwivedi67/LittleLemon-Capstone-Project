@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.littlelemon.littlelemon"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.littlelemon.littlelemon"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
@@ -56,8 +56,10 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:2.1.3")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.1.3")
     implementation("androidx.room:room-runtime:2.6.1")
+    implementation(libs.androidx.ui.graphics)
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("com.github.bumptech.glide:compose:1.0.0-alpha.1")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

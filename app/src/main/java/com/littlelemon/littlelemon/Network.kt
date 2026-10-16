@@ -18,27 +18,28 @@ data class MenuItemNetwork (
     @SerialName("id")
     val id : Int,
 
-    @SerialName( "Title")
+    @SerialName( "title")
     val title : String,
 
-    @SerialName("Description")
+    @SerialName("description")
     val description: String,
 
     @SerialName("price")
     val price: String,
 
-    @SerialName("Image")
+    @SerialName("image")
     val image: String,
 
-    @SerialName("Category")
+    @SerialName("category")
     val category: String
 ) {
-    fun toMenuItemRoom() = MenuItems(
+    fun toMenuItemRoom() = MenuItemEntity(
         id= id,
         title= title,
         price = price.toBigDecimalOrNull()?.toInt() ?: price.toIntOrNull() ?: 0,
         image= image,
-        category= category
+        category= category,
+        description= description
 
     )
 }

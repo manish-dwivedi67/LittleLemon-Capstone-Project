@@ -3,11 +3,11 @@ package com.littlelemon.littlelemon
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+
 
 //Define the function navigation Composable
 
@@ -24,7 +24,7 @@ fun Navigation(navController: NavHostController) {
 
     val isRegistered = firstName != null
 
-    val startDestination = if(isRegistered) {"Home" } else {"Onboarding" }
+    val startDestination = if (isRegistered) HomeDestination.route else Onboarding.route
 
     NavHost(
         navController= navController,
@@ -34,8 +34,8 @@ fun Navigation(navController: NavHostController) {
             Onboarding(navController= navController)
         }
 
-        composable(Home.route) {
-            Home(navController)
+        composable(HomeDestination.route) {
+            Home(navController = navController)
         }
 
         composable(Profile.route) {
